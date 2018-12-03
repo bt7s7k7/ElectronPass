@@ -258,6 +258,15 @@
 			if (!ingame && !paused) {
 				if (!dead) {
 					ctx.setColor(colors.white.lerp(colors.yellow, Math.random())).text(size.scale([0.5, 0.2]), size.mul(0.2).min(), "Electron\nPass", true, "Verdana")
+					ctx.setColor(colors.white).text([5, 20], 15, "Move: w a s d\nShoot: mouse1")
+					ctx.setColor(colors.white).text([5, 41 + 15], 15, "Friend:")
+					ctx.setColor(colors.white).text([5, 60 + 15], 15, "Enemy:")
+					ctx.setColor(colors.white).text([5, 80 + 15], 15, "Hurt:")
+					ctx.setColor(colors.yellow).rect([65,41],[15,15])
+					ctx.setColor(colors.green).rect([65 + 15 + 5,41],[15,15])
+					ctx.setColor(colors.red).rect([65,60],[15,15])
+					ctx.setColor(colors.orange).rect([65 + 15 + 5,60],[15,15])
+					ctx.setColor(colors.orange).rect([65,80],[15,15])
 				} else {
 					ctx.setColor(colors.red.lerp(colors.black, Math.random())).text(size.scale([0.5, 0.2]), size.mul(0.2).min(), "Neutralized", true, "Verdana")
 					ctx.setColor(colors.red.lerp(colors.black, Math.random())).text(size.scale([0.5, 0.4]), size.mul(0.1).min(), "Survived " + state.difficulty.toFixed(2) + "s\n" + (state.difficulty.toFixed(2) == B.l.best.toFixed(2) ? "New Record!" : "Record: " + B.l.best.toFixed(2) + "s"), true, "Verdana")

@@ -7,4 +7,4 @@ Top-down wave-survival game in browser. Available [here](https://bt7s7k7.github.
 - Multiple types of enemies
 - One weapon *(more planned)*
 - High scores
-- Infinitely progressing difficulty
+- Infinitely increasing difficulty
