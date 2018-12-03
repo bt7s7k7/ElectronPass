@@ -170,6 +170,38 @@
 			type: "0bullet"
 		})
 
+		var healthPickup = new EntityPrototype({
+			draw(entity) {
+				var angle = Date.now() / 100
+
+				var points = [
+					[-0.1, 40],
+					[0, 40],
+					[0.1, 40],
+					[0, 45],
+					[-0.1, 40]
+				]
+
+				polygon(entity.pos, points, angle, colors.green)
+				polygon(entity.pos, points, angle + Math.PI, colors.green)
+				polygon(entity.pos, points, angle - Math.PI / 2, colors.green)
+				polygon(entity.pos, points, angle + Math.PI / 2, colors.green)
+			},
+			update() { },
+			init() { },
+			collision(hit, entity) {
+				if (hit == state.player) {
+					state.player.health += 10
+					if (state.player.health > state.player.prototype.maxHealth) {
+						state.player.health = state.player.prototype.maxHealth
+					}
+					entity.destroy()
+				}
+			},
+			radius: 40,
+			type: "0health"
+		})
+
 		/**
 		 * @returns {Entity}
 		 * @param {string} type
@@ -194,8 +226,9 @@
 
 		function line(pos1, pos2, color) {
 			ctx.setColor(color)
+			var shakePower = Math.clamp(state.shakePower, 0, 50)
 			repeat(state.shakePower > 0 ? 4 : 1, () => {
-				ctx.line(transform(pos1.add(vector.random(2).mul(state.shakePower * 2))), transform(pos2.add(vector.random(2).mul(state.shakePower))), 1)
+				ctx.line(transform(pos1.add(vector.random(2).mul(shakePower))), transform(pos2.add(vector.random(2).mul(shakePower))), 1)
 			})
 		}
 
@@ -253,20 +286,20 @@
 			})
 
 			state.entitys.forEach(v => v.draw())
-			//state.entitys.forEach(v => ctx.setColor(colors.pink).strokeEllipse(transform(v.pos), [1,1].mul(v.prototype.radius)))
+			if (debug) state.entitys.forEach(v => ctx.setColor(colors.pink).strokeEllipse(transform(v.pos), [1,1].mul(v.prototype.radius)))
 
 			if (!ingame && !paused) {
 				if (!dead) {
 					ctx.setColor(colors.white.lerp(colors.yellow, Math.random())).text(size.scale([0.5, 0.2]), size.mul(0.2).min(), "Electron\nPass", true, "Verdana")
 					ctx.setColor(colors.white).text([5, 20], 15, "Move: w a s d\nShoot: mouse1")
-					ctx.setColor(colors.white).text([5, 41 + 15], 15, "Friend:")
-					ctx.setColor(colors.white).text([5, 60 + 15], 15, "Enemy:")
-					ctx.setColor(colors.white).text([5, 80 + 15], 15, "Hurt:")
-					ctx.setColor(colors.yellow).rect([65,41],[15,15])
-					ctx.setColor(colors.green).rect([65 + 15 + 5,41],[15,15])
-					ctx.setColor(colors.red).rect([65,60],[15,15])
-					ctx.setColor(colors.orange).rect([65 + 15 + 5,60],[15,15])
-					ctx.setColor(colors.orange).rect([65,80],[15,15])
+						.text([5, 41 + 15], 15, "Friend:")
+						.text([5, 60 + 15], 15, "Enemy:")
+						.text([5, 80 + 15], 15, "Hurt:")
+						.setColor(colors.yellow).rect([65,41],[15,15])
+						.setColor(colors.green).rect([65 + 15 + 5,41],[15,15])
+						.setColor(colors.red).rect([65,60],[15,15])
+						.setColor(colors.orange).rect([65 + 15 + 5,60],[15,15])
+						.setColor(colors.orange).rect([65,80],[15,15])
 				} else {
 					ctx.setColor(colors.red.lerp(colors.black, Math.random())).text(size.scale([0.5, 0.2]), size.mul(0.2).min(), "Neutralized", true, "Verdana")
 					ctx.setColor(colors.red.lerp(colors.black, Math.random())).text(size.scale([0.5, 0.4]), size.mul(0.1).min(), "Survived " + state.difficulty.toFixed(2) + "s\n" + (state.difficulty.toFixed(2) == B.l.best.toFixed(2) ? "New Record!" : "Record: " + B.l.best.toFixed(2) + "s"), true, "Verdana")
@@ -340,6 +373,24 @@
 						state.entitys.push(new Entity(state.player.pos.add(vector.fromAngle(Math.random(Math.PI * 2)).mul(dist)), v.prototype))
 					}
 				})
+
+				if (state.player.health < state.player.prototype.maxHealth) {
+					let maxAmount = Math.ceil((state.player.prototype.maxHealth - state.player.health) / 10)
+					let amount = 0
+					state.entitys.forEach(w => {
+						if (w.prototype == healthPickup) {
+							amount++
+						}
+					})
+
+					if (amount < maxAmount) {
+						if (Math.random() < 0.001 * deltaTime) {
+							var pos = vector.fromAngle(Math.random(Math.PI * 2)).mul(Math.random(maxSize - tileSize * 2))
+							state.entitys.push(new Entity(pos, healthPickup))
+						}
+					}
+
+				}
 			}
 
 			last = performance.now()
@@ -362,6 +413,9 @@
 			state.pos = [0, 0]
 			state.shakePower += 50
 			state.difficulty = 0
+
+
+			//state.entitys.push(new Entity(state.player.pos.add([0, -100]), healthPickup))
 		}
 	</script>
 	<script src="./entitys.js"></script>
