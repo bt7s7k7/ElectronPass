@@ -3,9 +3,23 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "stuff", "stuff", "{0FFD7705-FDF6-4438-BF62-F376BB33B2DF}"
+	ProjectSection(SolutionItems) = preProject
+		stuff\bUtils.js = stuff\bUtils.js
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4AAAA162-ECDC-4B63-B59C-5C3FA490745A}"
+	ProjectSection(SolutionItems) = preProject
+		entitys.js = entitys.js
+		index.html = index.html
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0FFD7705-FDF6-4438-BF62-F376BB33B2DF} = {4AAAA162-ECDC-4B63-B59C-5C3FA490745A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {64263111-A4CC-4F63-88AB-579B5310076F}

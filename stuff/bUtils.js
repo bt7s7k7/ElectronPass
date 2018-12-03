@@ -2192,7 +2192,7 @@ colors = { // @@@colors
 	darkGrey: [63, 63, 63],
 	voidGrey: [31, 31, 31],
 	lightGrey: [191, 191, 191],
-	orange: [255, 127, 0],
+	orange: [255, 100, 0],
 	softGreen: [0, 50, 50],
 	notepad: [11, 22, 29],
 	brown: [195, 104, 0],

@@ -15,13 +15,19 @@
 		var ingame = false
 		var dead = false
 		var paused = false
+		/** @type {Object<string, boolean>} */
+		var debugMods = {
+			mobSpawning: true,
+			invulnerable: false,
+			entityUpdates: true
+		}
 
-		/** @type {{prototype: EntityPrototype, minDiff: number, chance: number}[]} */
+		/** @type {{prototype: EntityPrototype, minDiff?: number, chance?: number, maxAmount?: number}[]} */
 		var spawnList = []
 
 		class EntityPrototype {
 			/**
-			 * @param {{ draw: (entity : Entity)=>void, update: (deltaTime : number, entity : Entity)=>void, init: (entity : Entity)=>void, collision: (hit : Entity, entity : Entity)=>void, maxHealth: number, type: string, radius: number, canDie: boolean }} s
+			 * @param {{ draw: (entity : Entity)=>void, update: (deltaTime : number, entity : Entity)=>void, init: (entity : Entity)=>void, collision?: (hit : Entity, entity : Entity)=>void, maxHealth?: number, type: string, radius?: number, canDie?: boolean }} s
 			 */
 			constructor(s) {
 				this.draw = s.draw
@@ -152,17 +158,35 @@
 				}
 			},
 			collision(hit, entity) {
-				if (hit.prototype.type[0] == "1") {
+				if (hit.prototype.type[0] == "1" && hit.prototype.maxHealth > 0) {
 					hit.health -= 10
 					entity.destroy()
 					state.shakePower += 5
-					state.lightColor = colors.orange.mul(0.25)
+					state.lightColor = colors.aqua.mul(0.25)
 					state.lightLast = 100
 				}
 			},
 			radius: 10,
 			type: "0bullet"
 		})
+
+		/**
+		 * @returns {Entity}
+		 * @param {string} type
+		 * @param {number[]} pos
+		 */
+		function spawnEntity(type, pos = state.player.pos) {
+			var entityP = null
+			for (let e of spawnList) {
+				if (e.prototype.type == type) {
+					entityP = e.prototype
+				}
+			}
+			if (!entityP) return null
+			var entity = new Entity(pos, entityP)
+			state.entitys.push(entity)
+			return entity
+		}
 
 		function transform(pos) {
 			return pos.add(state.pos.mul(-1)).add(ctx.getSize().mul(0.5))
@@ -171,7 +195,7 @@
 		function line(pos1, pos2, color) {
 			ctx.setColor(color)
 			repeat(state.shakePower > 0 ? 4 : 1, () => {
-				ctx.line(transform(pos1.add(vector.random(2).mul(state.shakePower))), transform(pos2.add(vector.random(2).mul(state.shakePower))), 1)
+				ctx.line(transform(pos1.add(vector.random(2).mul(state.shakePower * 2))), transform(pos2.add(vector.random(2).mul(state.shakePower))), 1)
 			})
 		}
 
@@ -191,6 +215,7 @@
 		}
 
 		function damagePlayer(damage) {
+			if (debugMods.invulnerable) return
 			state.player.health -= damage
 			state.lightColor = colors.red.mul(0.5)
 			state.lightLast = 200
@@ -198,6 +223,14 @@
 		}
 
 		function update() {
+			if (B.keysPress.F2 && B.keys.Shift) debug ^= 1
+
+			debugMods.toArray().forEach((v, i) => {
+				if (B.keys.F2 && B.keysPress[i.toString()]) {
+					debugMods[v.key] ^= 1
+				}
+			})
+
 			ctx.setSize(ctx.canvas.canvas.getSize()).setColor(colors.black).fill()
 			var size = ctx.getSize()
 			var tiles = size.mul(1 / tileSize).ceil().add([1, 1])
@@ -257,12 +290,16 @@
 			if (ingame) {
 				state.difficulty += deltaTime / 1000
 
-				state.entitys.forEach(v => v.update(deltaTime))
-				state.entitys.forEach(v => state.entitys.forEach(w => {
-					if (v != w && v.pos.distSqr(w.pos) <= v.prototype.radiusSqr + w.prototype.radiusSqr) {
-						v.collision(w)
-					}
-				}))
+				state.entitys.forEach(v => {
+					if (debugMods.entityUpdates || v == state.player) v.update(deltaTime)
+				})
+				state.entitys.forEach(v => {
+					if (debugMods.entityUpdates) state.entitys.forEach(w => {
+						if (v != w && v.pos.distSqr(w.pos) <= v.prototype.radiusSqr + w.prototype.radiusSqr) {
+							v.collision(w)
+						}
+					})
+				})
 
 				var moveVector = [0, 0]
 				if (B.keys.w) moveVector.addI([0, -1])
@@ -280,8 +317,17 @@
 				state.pos = state.pos.add(diff.normalize().mul(Math.clamp(length - size.min() / 10,0,Infinity) + length / 50))
 
 				let dist = size.size() / 2
-				spawnList.forEach(v => {
+				if (debugMods.mobSpawning) spawnList.forEach(v => {
 					if (state.difficulty >= v.minDiff && Math.random() < Math.clamp(v.chance * deltaTime * state.difficulty, 0, 0.01)) {
+						if (typeof v.maxAmount == "number") {
+							let amount = 0
+							state.entitys.forEach(w => {
+								if (w.prototype == v.prototype) {
+									amount++
+								}
+							})
+							if (amount >= v.maxAmount) return
+						}
 						state.entitys.push(new Entity(state.player.pos.add(vector.fromAngle(Math.random(Math.PI * 2)).mul(dist)), v.prototype))
 					}
 				})
@@ -290,8 +336,12 @@
 			last = performance.now()
 
 			if (state.pos.map(v => isNaN(v)).max() > 0) debugger
+			var debugText = ""
+			debugText += `FPS: ${B.fps.toFixed(2)}\nShake: ${state.shakePower}\n`
+			debugText += `Pos: ${(state.player || { pos: [0, 0] }).pos.map(v => v.toFixed(2))} Camera: ${state.pos.map(v => v.toFixed(2))}\n`
+			debugText += debugMods.toArray().map(v=>v.key + ": " + (+v.value)).join(" ") + "\n"
 
-			if (debug) ctx.setColor(colors.pink).text([0, 16], 16, `FPS: ${B.fps.toFixed(2)}\nShake: ${state.shakePower}\n Pos: ${(state.player || { pos: [0, 0] }).pos.map(v => v.toFixed(2))} Camera: ${state.pos.map(v => v.toFixed(2))}`)
+			if (debug) ctx.setColor(colors.pink).text([0, 16], 16, debugText)
 		}
 
 		function startGame() {
@@ -302,7 +352,7 @@
 			state.entitys.push(state.player)
 			state.pos = [0, 0]
 			state.shakePower += 50
-			state.difficulty = (B.keys.F2) ? -Infinity : 0
+			state.difficulty = 0
 		}
 	</script>
 	<script src="./entitys.js"></script>
