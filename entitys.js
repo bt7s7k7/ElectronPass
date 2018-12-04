@@ -107,6 +107,7 @@ spawnList.push({
 			init(entity) {
 				entity.timer = 4000
 				entity.dir = [0, 0]
+				entity.damage = 10
 			},
 			update(deltaTime, entity) {
 				entity.pos.addI(entity.dir.mul(deltaTime))
@@ -118,11 +119,89 @@ spawnList.push({
 			collision(hit, entity) {
 				if (hit == state.player) {
 					entity.destroy()
-					damagePlayer(10)
+					damagePlayer(entity.damage)
 				}
 			},
 			radius: 10,
 			type: "1bullet"
 		})
+	},
+	{
+		prototype: new EntityPrototype({
+			draw(entity) {
+				polygon(entity.pos.add(vector.random(2).mul(entity.shake)), [
+					[0, 40],
+					[Math.PI / 2, 40],
+					[Math.PI, 40],
+					[Math.PI / 2 * 3, 40]
+				], Date.now() / 700, colors.red)
+			},
+			init(entity) {
+				entity.shake = 100
+			},
+			update(deltaTime, entity) {
+				if (entity.timer <= 0) {
+					let angle = Date.now() / 700;
+					[angle, angle + Math.PI / 2, angle + Math.PI, angle - Math.PI / 2].forEach(v => {
+						var dir = vector.fromAngle(v)
+						var bullet = spawnEntity("1bullet", entity.pos)
+						bullet.dir = dir.mul(0.5)
+						//bullet.timer = 1000
+						bullet.damage = 1
+					})
+					entity.timer = 200
+				}
+				entity.timer -= deltaTime
+				if (entity.shake > 0) entity.shake -= deltaTime
+				else entity.shake = 0
+			},
+			maxHealth: 20,
+			type: "1sentry",
+			radius: 40,
+			canDie: true
+		}),
+		maxAmount: 1,
+		spawnInLevel: true,
+		overload: (amount, deltaTime) => {
+			if (amount < 1) {
+				if (!("lastSentrySpawn" in state.data)) state.data.lastSentrySpawn = -Infinity
+				var last = state.data.lastSentrySpawn
+				if (state.difficulty - last > 10 && Math.random() < 0.00001 * deltaTime * state.difficulty) {
+					state.data.lastSentrySpawn = state.difficulty
+					//console.log("Sentry spawned", state.difficulty, last, state.difficulty - last)
+					return true
+				} else {
+					return false
+				}
+			}
+		}
+	},
+	{
+		prototype: new EntityPrototype({
+			draw: (entity) => {
+				polygon(entity.pos.add(vector.random(2).mul(3)), [
+					[0, 40],
+					[Math.PI / 3 , 35],
+					[Math.PI - Math.PI / 4, 50],
+					[Math.PI, 40],
+					[Math.PI + Math.PI / 4, 50],
+					[- Math.PI / 3, 35]
+				], 0, colors.green)
+			},
+			init() { },
+			update() { },
+			collision(hit, entity) {
+				if (hit == state.player) {
+					state.effects.shield = 10000
+					entity.destroy()
+				}
+			},
+			type: "1pShield",
+			radius: 40
+		}),
+		maxAmount: 1,
+		chance: 0.000001,
+		minDiff: 10,
+		spawnInLevel: true
 	}
 )
